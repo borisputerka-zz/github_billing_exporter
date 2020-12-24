@@ -18,7 +18,6 @@ import (
 	"github.com/prometheus/common/promlog/flag"
 	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
-
 )
 
 const (
@@ -27,10 +26,10 @@ const (
 
 var (
 	metricsAddress = kingpin.Flag("metrics_address", "Address on which to expose metrics.").Envar("METRICS_ADDRESS").Default(":9999").String()
-	metricsPath = kingpin.Flag("metrics_path", "Path under which to expose metrics.").Envar("METRICS_PATH").Default("/metrics").String()
-	githubToken = kingpin.Flag("github_token", "GitHub token to access api").Envar("GITHUB_TOKEN").String()
-	githubOrgs = kingpin.Flag("github_orgs", "Organizations to get metrics from").Envar("GITHUB_ORGS").String()
-	gracefulStop = make(chan os.Signal)
+	metricsPath    = kingpin.Flag("metrics_path", "Path under which to expose metrics.").Envar("METRICS_PATH").Default("/metrics").String()
+	githubToken    = kingpin.Flag("github_token", "GitHub token to access api").Envar("GITHUB_TOKEN").String()
+	githubOrgs     = kingpin.Flag("github_orgs", "Organizations to get metrics from").Envar("GITHUB_ORGS").String()
+	gracefulStop   = make(chan os.Signal)
 )
 
 var (
