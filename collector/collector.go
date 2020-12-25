@@ -24,8 +24,8 @@ type Collector interface {
 }
 
 type BillingCollector struct {
-	Collectors map[string]Collector
-	githubOrgs string
+	Collectors  map[string]Collector
+	githubOrgs  string
 	githubToken string
 }
 
@@ -44,8 +44,8 @@ func NewBillingCollector(githubOrgs string, githubToken string, disabledCollecto
 		collectors[key] = collector(githubOrgs, githubToken)
 	}
 	return &BillingCollector{
-		Collectors: collectors,
-		githubOrgs: githubOrgs,
+		Collectors:  collectors,
+		githubOrgs:  githubOrgs,
 		githubToken: githubToken,
 	}
 }
