@@ -18,12 +18,26 @@ import (
 )
 
 var (
-	metricsAddress     = kingpin.Flag("metrics_address", "Address on which to expose metrics.").Envar("METRICS_ADDRESS").Default(":9999").String()
-	metricsPath        = kingpin.Flag("metrics_path", "Path under which to expose metrics.").Envar("METRICS_PATH").Default("/metrics").String()
-	disabledCollectors = kingpin.Flag("disabled_collectors", "Collectors to disable").Envar("COLLECTORS_DISABLED").String()
-	githubToken        = kingpin.Flag("github_token", "GitHub token to access api").Envar("GITHUB_TOKEN").String()
-	githubOrgs         = kingpin.Flag("github_orgs", "Organizations to get metrics from").Envar("GITHUB_ORGS").String()
-	gracefulStop       = make(chan os.Signal)
+	listenAddress = kingpin.Flag(
+		"web.listen-address",
+		"Address on which to expose metrics.",
+	).Envar("LISTEN_ADDRESS").Default(":9999").String()
+	metricsPath = kingpin.Flag(
+		"web.telemetry-path",
+		"Path under which to expose metrics.",
+	).Envar("METRICS_PATH").Default("/metrics").String()
+	disabledCollectors = kingpin.Flag(
+		"disabled-collectors",
+		"Collectors to disable",
+	).Envar("COLLECTORS_DISABLED").String()
+	githubToken = kingpin.Flag(
+		"github-token",
+		"GitHub token to access api",
+	).Envar("GITHUB_TOKEN").String()
+	githubOrgs = kingpin.Flag("github-orgs",
+		"Organizations to get metrics from",
+	).Envar("GITHUB_ORGS").String()
+	gracefulStop = make(chan os.Signal)
 )
 
 func main() {
@@ -44,7 +58,7 @@ func main() {
 
 	level.Info(logger).Log("msg", "Starting exporter", "version", version.Info())
 	level.Info(logger).Log("Build context", version.BuildContext())
-	level.Info(logger).Log("msg", "Starting Server", "listening address", *metricsAddress)
+	level.Info(logger).Log("msg", "Starting Server", "listening address", *listenAddress)
 
 	// listener for the termination signals from the OS
 	go func() {
@@ -65,5 +79,5 @@ func main() {
 			</body>
 			</html>`))
 	})
-	level.Error(logger).Log("msg", http.ListenAndServe(*metricsAddress, nil))
+	level.Error(logger).Log("msg", http.ListenAndServe(*listenAddress, nil))
 }
