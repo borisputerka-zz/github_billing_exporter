@@ -1,10 +1,10 @@
-project_name: github_billing_expoter
+project_name: github_billing_exporter
 release:
   github:
     owner: borisputerka
-    name: github_billing_expoter
+    name: github_billing_exporter
 builds:
-  - id: github_billing_expoter
+  - id: github_billing_exporter
     goos:
     - linux
     - windows
@@ -17,17 +17,17 @@ builds:
       - GO111MODULE=on
     main: github_billing_exporter.go
     ldflags: -s -w
-      -X github.com/borisputerka/github_billing_expoter/version.version={{.Version}}
-      -X github.com/borisputerka/github_billing_expoter/version.gitSHA={{.Commit}}
-      -X github.com/borisputerka/github_billing_expoter/version.buildTime={{.Date}}
+      -X github.com/borisputerka/github_billing_exporter/version.version={{.Version}}
+      -X github.com/borisputerka/github_billing_exporter/version.gitSHA={{.Commit}}
+      -X github.com/borisputerka/github_billing_exporter/version.buildTime={{.Date}}
       -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
-    binary: github_billing_expoter
+    binary: github_billing_exporter
     hooks: {}
 archives:
-  - id: github_billing_expoter
+  - id: github_billing_exporter
     builds:
-      - github_billing_expoter
+      - github_billing_exporter
     format: tar.gz
     format_overrides:
       - goos: windows
