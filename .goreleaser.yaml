@@ -1,0 +1,44 @@
+project_name: github_billing_expoter
+release:
+  github:
+    owner: borisputerka
+    name: github_billing_expoter
+builds:
+  - id: github_billing_expoter
+    goos:
+    - linux
+    - windows
+    - darwin
+    goarch:
+    - amd64
+    - "386"
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    main: cmd/plugin/main.go
+    ldflags: -s -w
+      -X github.com/borisputerka/github_billing_expoter/version.version={{.Version}}
+      -X github.com/borisputerka/github_billing_expoter/version.gitSHA={{.Commit}}
+      -X github.com/borisputerka/github_billing_expoter/version.buildTime={{.Date}}
+      -extldflags "-static"
+    flags: -tags netgo -installsuffix netgo
+    binary: github_billing_expoter
+    hooks: {}
+archives:
+  - id: github_billing_expoter
+    builds:
+      - github_billing_expoter
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*

@@ -74,7 +74,7 @@ func main() {
 		_, _ = w.Write([]byte(`<html>
 			<head><title>GitHub Billing Expoorter</title></head>
 			<body>
-			<h1>Node Exporter</h1>
+			<h1>GitHub Billing Exporter</h1>
 			<p><a href="` + *metricsPath + `">Metrics</a></p>
 			</body>
 			</html>`))
