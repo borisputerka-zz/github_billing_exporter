@@ -58,7 +58,7 @@ func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- sc.estimatedStorageForMonth
 }
 
-func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) error {
+func (sc *StorageCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(sc.GithubOrgs)
 	for _, org := range orgs {
 		var s storage

@@ -59,7 +59,7 @@ func (pc *PackagesCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- pc.includedGigabytesBandwidth
 }
 
-func (pc *PackagesCollector) Collect(ch chan<- prometheus.Metric) error {
+func (pc *PackagesCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(pc.GithubOrgs)
 	for _, org := range orgs {
 		var p packages

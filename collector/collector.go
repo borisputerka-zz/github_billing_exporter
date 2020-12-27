@@ -20,7 +20,7 @@ var (
 )
 
 type Collector interface {
-	Collect(ch chan<- prometheus.Metric) error
+	Update(ch chan<- prometheus.Metric) error
 }
 
 type BillingCollector struct {
@@ -40,7 +40,6 @@ func NewBillingCollector(githubOrgs string, githubToken string, disabledCollecto
 		delete(factories, disabledCollector)
 	}
 	for key, collector := range factories {
-
 		collectors[key] = collector(githubOrgs, githubToken)
 	}
 	return &BillingCollector{
@@ -69,7 +68,7 @@ func (n BillingCollector) Collect(ch chan<- prometheus.Metric) {
 func execute(name string, c Collector, ch chan<- prometheus.Metric) {
 	var success float64
 
-	err := c.Collect(ch)
+	err := c.Update(ch)
 	if err != nil {
 		success = 0
 	} else {

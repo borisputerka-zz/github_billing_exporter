@@ -60,7 +60,7 @@ func (ac *ActionsCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- ac.includedMinutes
 }
 
-func (ac *ActionsCollector) Collect(ch chan<- prometheus.Metric) error {
+func (ac *ActionsCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(ac.GithubOrgs)
 	for _, org := range orgs {
 		var a actions
