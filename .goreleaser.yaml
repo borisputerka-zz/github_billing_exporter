@@ -15,7 +15,7 @@ builds:
     env:
       - CGO_ENABLED=0
       - GO111MODULE=on
-    main: cmd/plugin/main.go
+    main: github_billing_exporter.go
     ldflags: -s -w
       -X github.com/borisputerka/github_billing_expoter/version.version={{.Version}}
       -X github.com/borisputerka/github_billing_expoter/version.gitSHA={{.Commit}}
