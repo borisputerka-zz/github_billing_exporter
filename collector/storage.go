@@ -74,16 +74,16 @@ func (sc *StorageCollector) Update(ch chan<- prometheus.Metric) error {
 			return err
 		}
 
-		resp.Body.Close()
 		if resp.StatusCode != 200 {
 			return fmt.Errorf("status %s, organization: %s collector: %s", resp.Status, org, storageSubsystem)
-
 		}
 
 		err = json.NewDecoder(resp.Body).Decode(&s)
 		if err != nil {
 			return err
 		}
+
+		resp.Body.Close()
 
 		ch <- prometheus.MustNewConstMetric(sc.daysLeftInBillingCycle, prometheus.GaugeValue, float64(s.DaysLeftInBillingCycle), org)
 		ch <- prometheus.MustNewConstMetric(sc.estimatedPaidStorageForMonth, prometheus.GaugeValue, float64(s.EstimatedPaidStorageForMonth), org)

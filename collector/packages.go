@@ -77,7 +77,6 @@ func (pc *PackagesCollector) Update(ch chan<- prometheus.Metric) error {
 			return err
 		}
 
-		resp.Body.Close()
 		if resp.StatusCode != 200 {
 			return fmt.Errorf("status %s, organization: %s collector: %s", resp.Status, org, packagesSubsystem)
 		}
@@ -86,6 +85,7 @@ func (pc *PackagesCollector) Update(ch chan<- prometheus.Metric) error {
 		if err != nil {
 			return err
 		}
+		resp.Body.Close()
 
 		ch <- prometheus.MustNewConstMetric(pc.totalGigabytesBandwidthUsed, prometheus.GaugeValue, float64(p.TotalGigabytesBandwidthUsed), org)
 		ch <- prometheus.MustNewConstMetric(pc.totalPaidGigabytesBandwidthUsed, prometheus.GaugeValue, float64(p.TotalPaidGigabytesBandwidthUsed), org)

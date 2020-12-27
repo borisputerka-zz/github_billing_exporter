@@ -74,14 +74,16 @@ func (ac *ActionsCollector) Update(ch chan<- prometheus.Metric) error {
 			return err
 		}
 
-		resp.Body.Close()
 		if resp.StatusCode != 200 {
 			return fmt.Errorf("status %s, organization: %s collector: %s", resp.Status, org, actionsSubsystem)
 		}
+
 		err = json.NewDecoder(resp.Body).Decode(&a)
 		if err != nil {
 			return err
 		}
+
+		resp.Body.Close()
 
 		ch <- prometheus.MustNewConstMetric(ac.usedMinutesTotal, prometheus.GaugeValue, float64(a.TotalMinutesUsed), org)
 		ch <- prometheus.MustNewConstMetric(ac.paidMinutedUsedTotal, prometheus.GaugeValue, float64(a.TotalPaidMinutedUsed), org)
