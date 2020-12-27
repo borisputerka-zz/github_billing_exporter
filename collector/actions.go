@@ -2,12 +2,15 @@ package collector
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"sync"
 )
 
-var ()
+var (
+	actionsSubsystem = "actions"
+)
 
 type actions struct {
 	TotalMinutesUsed     int `json:"total_minutes_used"`
@@ -36,17 +39,17 @@ func NewActionsCollector(githubOrgs string, githubToken string) Collector {
 		GithubOrgs:  githubOrgs,
 		GithubToken: githubToken,
 		usedMinutesTotal: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "actions", "used_minutes"),
+			prometheus.BuildFQName(namespace, actionsSubsystem, "used_minutes"),
 			"Total GitHub actions used minutes",
 			[]string{"org"}, nil,
 		),
 		paidMinutedUsedTotal: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "actions", "paid_minutes"),
+			prometheus.BuildFQName(namespace, actionsSubsystem, "paid_minutes"),
 			"Total GitHub actions paid minutes",
 			[]string{"org"}, nil,
 		),
 		includedMinutes: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "actions", "included_minutes"),
+			prometheus.BuildFQName(namespace, actionsSubsystem, "included_minutes"),
 			"GitHub actions included minutes",
 			[]string{"org"}, nil,
 		),
@@ -64,16 +67,17 @@ func (ac *ActionsCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(ac.GithubOrgs)
 	for _, org := range orgs {
 		var a actions
-		req, _ := http.NewRequest("GET", "/orgs/"+org+"/settings/billing/actions", nil)
+		req, _ := http.NewRequest("GET", "https://api.github.com/orgs/"+org+"/settings/billing/actions", nil)
 		req.Header.Set("Authorization", "token "+ac.GithubToken)
 		resp, err := ac.client.Do(req)
 		if err != nil {
 			return err
 		}
-		if resp.StatusCode != 200 {
-			return err
-		}
 
+		resp.Body.Close()
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("status %s, organization: %s collector: %s", resp.Status, org, actionsSubsystem)
+		}
 		err = json.NewDecoder(resp.Body).Decode(&a)
 		if err != nil {
 			return err

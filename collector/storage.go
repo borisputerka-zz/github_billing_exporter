@@ -2,9 +2,14 @@ package collector
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"sync"
+)
+
+var (
+	storageSubsystem = "storage"
 )
 
 type storage struct {
@@ -39,12 +44,12 @@ func NewStorageCollector(githubOrgs string, githubToken string) Collector {
 			[]string{"org"}, nil,
 		),
 		estimatedPaidStorageForMonth: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "storage", "estimated_month_pay"),
+			prometheus.BuildFQName(namespace, storageSubsystem, "estimated_month_pay"),
 			"GitHub packages month estimated pay",
 			[]string{"org"}, nil,
 		),
 		estimatedStorageForMonth: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "storage", "estimated_month_use"),
+			prometheus.BuildFQName(namespace, storageSubsystem, "estimated_month_use"),
 			"GitHub packages month estimated storage",
 			[]string{"org"}, nil,
 		),
@@ -62,14 +67,17 @@ func (sc *StorageCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(sc.GithubOrgs)
 	for _, org := range orgs {
 		var s storage
-		req, _ := http.NewRequest("GET", "/orgs/"+org+"/settings/billing/shared-storage", nil)
+		req, _ := http.NewRequest("GET", "https://api.github.com/orgs/"+org+"/settings/billing/shared-storage", nil)
 		req.Header.Set("Authorization", "token "+sc.GithubToken)
 		resp, err := sc.client.Do(req)
 		if err != nil {
 			return err
 		}
+
+		resp.Body.Close()
 		if resp.StatusCode != 200 {
-			return err
+			return fmt.Errorf("status %s, organization: %s collector: %s", resp.Status, org, storageSubsystem)
+
 		}
 
 		err = json.NewDecoder(resp.Body).Decode(&s)

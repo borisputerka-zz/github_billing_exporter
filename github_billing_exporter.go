@@ -52,7 +52,7 @@ func main() {
 	signal.Notify(gracefulStop, syscall.SIGHUP)
 	signal.Notify(gracefulStop, syscall.SIGQUIT)
 
-	exporter := collector.NewBillingCollector(*githubOrgs, *githubToken, *disabledCollectors)
+	exporter := collector.NewBillingCollector(*githubOrgs, *githubToken, *disabledCollectors, logger)
 	prometheus.MustRegister(exporter)
 	prometheus.MustRegister(version.NewCollector("github_billing_exporter"))
 

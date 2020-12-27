@@ -1,8 +1,11 @@
 package collector
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"sync"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const namespace = "github_billing"
@@ -27,13 +30,14 @@ type BillingCollector struct {
 	Collectors  map[string]Collector
 	githubOrgs  string
 	githubToken string
+	logger      log.Logger
 }
 
 func registerCollector(collector string, factory func(githubOrgs string, githubToken string) Collector) {
 	factories[collector] = factory
 }
 
-func NewBillingCollector(githubOrgs string, githubToken string, disabledCollectors string) *BillingCollector {
+func NewBillingCollector(githubOrgs string, githubToken string, disabledCollectors string, logger log.Logger) *BillingCollector {
 	collectors := make(map[string]Collector)
 	disabledCollectorsList := parseArg(disabledCollectors)
 	for _, disabledCollector := range disabledCollectorsList {
@@ -46,6 +50,7 @@ func NewBillingCollector(githubOrgs string, githubToken string, disabledCollecto
 		Collectors:  collectors,
 		githubOrgs:  githubOrgs,
 		githubToken: githubToken,
+		logger:      logger,
 	}
 }
 
@@ -58,18 +63,19 @@ func (n BillingCollector) Collect(ch chan<- prometheus.Metric) {
 	wg.Add(len(n.Collectors))
 	for name, c := range n.Collectors {
 		go func(name string, c Collector) {
-			execute(name, c, ch)
+			execute(name, c, ch, n.logger)
 			wg.Done()
 		}(name, c)
 	}
 	wg.Wait()
 }
 
-func execute(name string, c Collector, ch chan<- prometheus.Metric) {
+func execute(name string, c Collector, ch chan<- prometheus.Metric, logger log.Logger) {
 	var success float64
 
 	err := c.Update(ch)
 	if err != nil {
+		level.Error(logger).Log("msg", "Cannot collect metrics", "err", err)
 		success = 0
 	} else {
 		success = 1

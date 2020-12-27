@@ -2,10 +2,16 @@ package collector
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+)
+
+var (
+	packagesSubsystem = "packages"
 )
 
 type packages struct {
@@ -24,6 +30,7 @@ type PackagesCollector struct {
 
 	mutex  sync.Mutex
 	client *http.Client
+	logger log.Logger
 }
 
 func init() {
@@ -35,17 +42,17 @@ func NewPackagesCollector(githubOrgs string, githubToken string) Collector {
 		GithubOrgs:  githubOrgs,
 		GithubToken: githubToken,
 		totalGigabytesBandwidthUsed: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "packages", "bandwidth_used_gigabytes"),
+			prometheus.BuildFQName(namespace, packagesSubsystem, "bandwidth_used_gigabytes"),
 			"GitHub packages used in gigabytes",
 			[]string{"org"}, nil,
 		),
 		totalPaidGigabytesBandwidthUsed: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "packages", "bandwidth_used_paid_gigabytes"),
+			prometheus.BuildFQName(namespace, packagesSubsystem, "bandwidth_used_paid_gigabytes"),
 			"GitHub packages paid used in gigabytes",
 			[]string{"org"}, nil,
 		),
 		includedGigabytesBandwidth: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "packages", "bandwidth_included_gigabytes"),
+			prometheus.BuildFQName(namespace, packagesSubsystem, "bandwidth_included_gigabytes"),
 			"GitHub packages paid used in gigabytes",
 			[]string{"org"}, nil,
 		),
@@ -63,14 +70,16 @@ func (pc *PackagesCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(pc.GithubOrgs)
 	for _, org := range orgs {
 		var p packages
-		req, _ := http.NewRequest("GET", "/orgs/"+org+"/settings/billing/packages", nil)
+		req, _ := http.NewRequest("GET", "https://api.github.com/orgs/"+org+"/settings/billing/packages", nil)
 		req.Header.Set("Authorization", "token "+pc.GithubToken)
 		resp, err := pc.client.Do(req)
 		if err != nil {
 			return err
 		}
+
+		resp.Body.Close()
 		if resp.StatusCode != 200 {
-			return err
+			return fmt.Errorf("status %s, organization: %s collector: %s", resp.Status, org, packagesSubsystem)
 		}
 
 		err = json.NewDecoder(resp.Body).Decode(&p)
