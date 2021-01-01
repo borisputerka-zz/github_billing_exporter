@@ -22,7 +22,7 @@ Running using an environment variable:
 
 Running using args:
 
-    ./mysqld_exporter \
+    ./github_billing_exporter \
     --github-orgs="ORG1,ORG2,..." \
     --github-token="example_token"
 
@@ -40,7 +40,7 @@ storage  | Exposes billing statistics from `/orgs/{org}/settings/billing/shared-
 
 ## Environment variables / args reference
 
-Env		      | Arg			| Description				     | Default  | Required
+Env		      | Arg			| Description				     | Default    | Required
 ----------------------|-------------------------|--------------------------------------------|------------|---------
 `DISABLED_COLLECTORS` | `--disabled-collectors` | Collectors to disable			     | `""`	  | `no`
 `GITHUB_ORGS`	      | `--github-orgs`		| GitHub organizations to scrape metrics for | `""`	  | `yes`
