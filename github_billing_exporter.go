@@ -21,7 +21,7 @@ var (
 	listenAddress = kingpin.Flag(
 		"web.listen-address",
 		"Address on which to expose metrics.",
-	).Envar("LISTEN_ADDRESS").Default(":9999").String()
+	).Envar("LISTEN_ADDRESS").Default(":9776").String()
 	metricsPath = kingpin.Flag(
 		"web.telemetry-path",
 		"Path under which to expose metrics.",
