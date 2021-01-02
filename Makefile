@@ -1,6 +1,6 @@
 GO    := GO111MODULE=on go
 PROMU := $(shell $(GO) env GOPATH)/bin/promu
-pkgs   = $(shell $(GO) list ./... | grep -v /vendor/)
+pkgs   =  ./...
 
 PREFIX                  ?= $(shell pwd)
 BIN_DIR                 ?= $(shell pwd)
