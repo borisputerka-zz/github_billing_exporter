@@ -3,10 +3,10 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 
+	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -21,9 +21,6 @@ type packages struct {
 }
 
 type PackagesCollector struct {
-	GithubOrgs  string
-	GithubToken string
-
 	totalGigabytesBandwidthUsed     *prometheus.Desc
 	totalPaidGigabytesBandwidthUsed *prometheus.Desc
 	includedGigabytesBandwidth      *prometheus.Desc
@@ -34,13 +31,11 @@ type PackagesCollector struct {
 }
 
 func init() {
-	registerCollector("packages", NewPackagesCollector)
+	registerCollector("packages", defaultEnabled, NewPackagesCollector)
 }
 
-func NewPackagesCollector(githubOrgs string, githubToken string) Collector {
+func NewPackagesCollector(logger log.Logger) (Collector, error) {
 	return &PackagesCollector{
-		GithubOrgs:  githubOrgs,
-		GithubToken: githubToken,
 		totalGigabytesBandwidthUsed: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, packagesSubsystem, "bandwidth_used_gigabytes"),
 			"GitHub packages used in gigabytes",
@@ -57,7 +52,8 @@ func NewPackagesCollector(githubOrgs string, githubToken string) Collector {
 			[]string{"org"}, nil,
 		),
 		client: &http.Client{},
-	}
+		logger: logger,
+	}, nil
 }
 
 func (pc *PackagesCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -67,11 +63,11 @@ func (pc *PackagesCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (pc *PackagesCollector) Update(ch chan<- prometheus.Metric) error {
-	orgs := parseArg(pc.GithubOrgs)
+	orgs := parseArg(*githubOrgs)
 	for _, org := range orgs {
 		var p packages
 		req, _ := http.NewRequest("GET", "https://api.github.com/orgs/"+org+"/settings/billing/packages", nil)
-		req.Header.Set("Authorization", "token "+pc.GithubToken)
+		req.Header.Set("Authorization", "token "+*githubToken)
 		resp, err := pc.client.Do(req)
 		if err != nil {
 			return err

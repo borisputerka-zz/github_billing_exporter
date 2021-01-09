@@ -3,6 +3,7 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"sync"
@@ -19,25 +20,21 @@ type storage struct {
 }
 
 type StorageCollector struct {
-	GithubOrgs  string
-	GithubToken string
-
 	daysLeftInBillingCycle       *prometheus.Desc
 	estimatedPaidStorageForMonth *prometheus.Desc
 	estimatedStorageForMonth     *prometheus.Desc
 
 	mutex  sync.Mutex
 	client *http.Client
+	logger log.Logger
 }
 
 func init() {
-	registerCollector("storage", NewStorageCollector)
+	registerCollector("storage", defaultEnabled, NewStorageCollector)
 }
 
-func NewStorageCollector(githubOrgs string, githubToken string) Collector {
+func NewStorageCollector(logger log.Logger) (Collector, error) {
 	return &StorageCollector{
-		GithubOrgs:  githubOrgs,
-		GithubToken: githubToken,
 		daysLeftInBillingCycle: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "cycle_remaining_days"),
 			"GitHub packages paid used in gigabytes",
@@ -54,7 +51,8 @@ func NewStorageCollector(githubOrgs string, githubToken string) Collector {
 			[]string{"org"}, nil,
 		),
 		client: &http.Client{},
-	}
+		logger: logger,
+	}, nil
 }
 
 func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -64,11 +62,11 @@ func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (sc *StorageCollector) Update(ch chan<- prometheus.Metric) error {
-	orgs := parseArg(sc.GithubOrgs)
+	orgs := parseArg(*githubOrgs)
 	for _, org := range orgs {
 		var s storage
 		req, _ := http.NewRequest("GET", "https://api.github.com/orgs/"+org+"/settings/billing/shared-storage", nil)
-		req.Header.Set("Authorization", "token "+sc.GithubToken)
+		req.Header.Set("Authorization", "token "+*githubToken)
 		resp, err := sc.client.Do(req)
 		if err != nil {
 			return err

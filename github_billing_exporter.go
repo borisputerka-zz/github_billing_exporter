@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"github.com/borisputerka/github_billing_exporter/collector"
+	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/borisputerka/github_billing_exporter/collector"
 	"github.com/go-kit/kit/log/level"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/promlog/flag"
@@ -26,17 +27,6 @@ var (
 		"web.telemetry-path",
 		"Path under which to expose metrics.",
 	).Envar("METRICS_PATH").Default("/metrics").String()
-	disabledCollectors = kingpin.Flag(
-		"disabled-collectors",
-		"Collectors to disable",
-	).Envar("COLLECTORS_DISABLED").String()
-	githubToken = kingpin.Flag(
-		"github-token",
-		"GitHub token to access api",
-	).Envar("GITHUB_TOKEN").String()
-	githubOrgs = kingpin.Flag("github-orgs",
-		"Organizations to get metrics from",
-	).Envar("GITHUB_ORGS").String()
 	gracefulStop = make(chan os.Signal)
 )
 
@@ -52,7 +42,11 @@ func main() {
 	signal.Notify(gracefulStop, syscall.SIGHUP)
 	signal.Notify(gracefulStop, syscall.SIGQUIT)
 
-	exporter := collector.NewBillingCollector(*githubOrgs, *githubToken, *disabledCollectors, logger)
+	exporter, err := collector.NewBillingCollector(logger)
+	if err != nil {
+		fmt.Errorf("couldn't create collector: %s", err)
+	}
+
 	prometheus.MustRegister(exporter)
 	prometheus.MustRegister(version.NewCollector("github_billing_exporter"))
 
@@ -72,7 +66,7 @@ func main() {
 	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`<html>
-			<head><title>GitHub Billing Expoorter</title></head>
+			<head><title>GitHub Billing Exporter</title></head>
 			<body>
 			<h1>GitHub Billing Exporter</h1>
 			<p><a href="` + *metricsPath + `">Metrics</a></p>
