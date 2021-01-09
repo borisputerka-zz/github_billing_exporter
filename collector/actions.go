@@ -20,7 +20,7 @@ type actions struct {
 	IncludedMinutes      int `json:"included_minutes"`
 }
 
-type ActionsCollector struct {
+type actionsCollector struct {
 	usedMinutesTotal     *prometheus.Desc
 	paidMinutedUsedTotal *prometheus.Desc
 	includedMinutes      *prometheus.Desc
@@ -34,8 +34,9 @@ func init() {
 	registerCollector("actions", defaultEnabled, NewActionsCollector)
 }
 
+// NewActionsCollector returns a new Collector exposing actions billing stats.
 func NewActionsCollector(logger log.Logger) (Collector, error) {
-	return &ActionsCollector{
+	return &actionsCollector{
 		usedMinutesTotal: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, actionsSubsystem, "used_minutes"),
 			"Total GitHub actions used minutes",
@@ -56,13 +57,16 @@ func NewActionsCollector(logger log.Logger) (Collector, error) {
 	}, nil
 }
 
-func (ac *ActionsCollector) Describe(ch chan<- *prometheus.Desc) {
+// Describe implements Collector.
+func (ac *actionsCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- ac.usedMinutesTotal
 	ch <- ac.paidMinutedUsedTotal
 	ch <- ac.includedMinutes
 }
 
-func (ac *ActionsCollector) Update(ch chan<- prometheus.Metric) error {
+// Update implements Collector and exposes actions billing stats
+// from api.github.com/orgs/<org>/settings/billing/actions.
+func (ac *actionsCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(*githubOrgs)
 	for _, org := range orgs {
 		var a actions

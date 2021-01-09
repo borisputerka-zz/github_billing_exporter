@@ -40,10 +40,12 @@ var (
 	).Envar("GITHUB_ORGS").String()
 )
 
+// Collector is the interface a collector has to implement.
 type Collector interface {
 	Update(ch chan<- prometheus.Metric) error
 }
 
+// BillingCollector implements the prometheus.Collector interface.
 type BillingCollector struct {
 	Collectors map[string]Collector
 	logger     log.Logger
@@ -60,11 +62,12 @@ func registerCollector(collector string, isDefaultEnabled bool, factory func(log
 	flagName := fmt.Sprintf("collector.%s", collector)
 	flagHelp := fmt.Sprintf("Enable the %s collector (default: %s).", collector, helpDefaultState)
 	defaultValue := fmt.Sprintf("%v", isDefaultEnabled)
-	flag := kingpin.Flag(flagName, flagHelp).Default(defaultValue).Action(collectorFlagAction(collector)).Bool()
+	flag := kingpin.Flag(flagName, flagHelp).Default(defaultValue).Bool()
 	collectorState[collector] = flag
 	factories[collector] = factory
 }
 
+// NewBillingCollector creates a new BillingCollector.
 func NewBillingCollector(logger log.Logger) (*BillingCollector, error) {
 	collectors := make(map[string]Collector)
 	for key, enabled := range collectorState {
@@ -86,10 +89,12 @@ func NewBillingCollector(logger log.Logger) (*BillingCollector, error) {
 	}, nil
 }
 
+// Describe implements the prometheus.Collector interface.
 func (n BillingCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- up
 }
 
+// Collect implements the prometheus.Collector interface.
 func (n BillingCollector) Collect(ch chan<- prometheus.Metric) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(n.Collectors))
@@ -114,16 +119,4 @@ func execute(name string, c Collector, ch chan<- prometheus.Metric, logger log.L
 	}
 
 	ch <- prometheus.MustNewConstMetric(up, prometheus.GaugeValue, success, name)
-}
-
-// collectorFlagAction generates a new action function for the given collector
-// to track whether it has been explicitly enabled or disabled from the command line.
-// A new action function is needed for each collector flag because the ParseContext
-// does not contain information about which flag called the action.
-// See: https://github.com/alecthomas/kingpin/issues/294
-func collectorFlagAction(collector string) func(ctx *kingpin.ParseContext) error {
-	return func(ctx *kingpin.ParseContext) error {
-		forcedCollectors[collector] = true
-		return nil
-	}
 }

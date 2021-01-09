@@ -19,7 +19,7 @@ type storage struct {
 	EstimatedStorageForMonth     int `json:"estimated_storage_for_month"`
 }
 
-type StorageCollector struct {
+type storageCollector struct {
 	daysLeftInBillingCycle       *prometheus.Desc
 	estimatedPaidStorageForMonth *prometheus.Desc
 	estimatedStorageForMonth     *prometheus.Desc
@@ -33,8 +33,9 @@ func init() {
 	registerCollector("storage", defaultEnabled, NewStorageCollector)
 }
 
+// NewStorageCollector returns a new Collector exposing storage billing stats.
 func NewStorageCollector(logger log.Logger) (Collector, error) {
-	return &StorageCollector{
+	return &storageCollector{
 		daysLeftInBillingCycle: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "cycle_remaining_days"),
 			"GitHub packages paid used in gigabytes",
@@ -55,13 +56,16 @@ func NewStorageCollector(logger log.Logger) (Collector, error) {
 	}, nil
 }
 
-func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
+// Describe implements Collector.
+func (sc *storageCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- sc.daysLeftInBillingCycle
 	ch <- sc.estimatedPaidStorageForMonth
 	ch <- sc.estimatedStorageForMonth
 }
 
-func (sc *StorageCollector) Update(ch chan<- prometheus.Metric) error {
+// Update implements Collector and exposes storage billing stats
+// from api.github.com/orgs/<org>/settings/billing/shared-storage.
+func (sc *storageCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(*githubOrgs)
 	for _, org := range orgs {
 		var s storage

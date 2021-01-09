@@ -20,7 +20,7 @@ type packages struct {
 	IncludedGigabytesBandwidth      int `json:"included_gigabytes_bandwidth"`
 }
 
-type PackagesCollector struct {
+type packagesCollector struct {
 	totalGigabytesBandwidthUsed     *prometheus.Desc
 	totalPaidGigabytesBandwidthUsed *prometheus.Desc
 	includedGigabytesBandwidth      *prometheus.Desc
@@ -34,8 +34,9 @@ func init() {
 	registerCollector("packages", defaultEnabled, NewPackagesCollector)
 }
 
+// NewPackagesCollector returns a new Collector exposing packages billing stats.
 func NewPackagesCollector(logger log.Logger) (Collector, error) {
-	return &PackagesCollector{
+	return &packagesCollector{
 		totalGigabytesBandwidthUsed: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, packagesSubsystem, "bandwidth_used_gigabytes"),
 			"GitHub packages used in gigabytes",
@@ -56,13 +57,16 @@ func NewPackagesCollector(logger log.Logger) (Collector, error) {
 	}, nil
 }
 
-func (pc *PackagesCollector) Describe(ch chan<- *prometheus.Desc) {
+// Describe implements Collector.
+func (pc *packagesCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- pc.totalGigabytesBandwidthUsed
 	ch <- pc.totalPaidGigabytesBandwidthUsed
 	ch <- pc.includedGigabytesBandwidth
 }
 
-func (pc *PackagesCollector) Update(ch chan<- prometheus.Metric) error {
+// Update implements Collector and exposes packages billing stats
+// from api.github.com/orgs/<org>/settings/billing/packages.
+func (pc *packagesCollector) Update(ch chan<- prometheus.Metric) error {
 	orgs := parseArg(*githubOrgs)
 	for _, org := range orgs {
 		var p packages
