@@ -28,7 +28,7 @@ Running using args:
 
 ## Collectors
 
-There are three collectors (`actions`, `packages` and `storage`) all enabled by default. Disabling collector(s) can be done using environment variable `DISABLED_COLLECTORS` or arg `--disabled-collectors`.
+There are three collectors (`actions`, `packages` and `storage`) all enabled by default. Disabling collector(s) can be done using arg `--no-collector.<name>`.
 
 ### List of collectors
 
@@ -40,10 +40,10 @@ storage  | Exposes billing statistics from `/orgs/{org}/settings/billing/shared-
 
 ## Environment variables / args reference
 
-Env		      | Arg			| Description				     | Default    | Required
-----------------------|-------------------------|--------------------------------------------|------------|---------
-`DISABLED_COLLECTORS` | `--disabled-collectors` | Collectors to disable			     | `""`	  | `no`
-`GITHUB_ORGS`	      | `--github-orgs`		| GitHub organizations to scrape metrics for | `""`	  | `yes`
-`GITHUB_TOKEN`        | `--github-token`	| GitHub token with billind read privileges  | `""`	  | `yes`
-`LISTEN_ADDRESS`      | `--web.listen-address`  | Address on which to expose metrics.        | `:9999`    | `no`
-`METRICS_PATH`	      | `--web.telemetry-path`  | Path under which to expose metrics.        | `/metrics` | `no`
+Version    | Env		   | Arg		     | Description				  | Default
+-----------|-----------------------|-------------------------|--------------------------------------------|---------
+=`0.1.0`   | `DISABLED_COLLECTORS` | `--disabled-collectors` | Collectors to disable			  | `""`
+\>=`0.1.0` | `GITHUB_ORGS`	   | `--github-orgs`	     | GitHub organizations to scrape metrics for | `""`
+\>=`0.1.0` | `GITHUB_TOKEN`        | `--github-token`	     | GitHub token with billind read privileges  | `""`
+\>=`0.1.0` | `LISTEN_ADDRESS`      | `--web.listen-address`  | Address on which to expose metrics.        | `:9776`
+\>=`0.1.0` | `METRICS_PATH`	   | `--web.telemetry-path`  | Path under which to expose metrics.        | `/metrics`

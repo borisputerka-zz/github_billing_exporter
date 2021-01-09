@@ -3,9 +3,11 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"sync"
+
+	"github.com/go-kit/kit/log"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -19,25 +21,21 @@ type actions struct {
 }
 
 type ActionsCollector struct {
-	GithubOrgs  string
-	GithubToken string
-
 	usedMinutesTotal     *prometheus.Desc
 	paidMinutedUsedTotal *prometheus.Desc
 	includedMinutes      *prometheus.Desc
 
 	mutex  sync.Mutex
 	client *http.Client
+	logger log.Logger
 }
 
 func init() {
-	registerCollector("actions", NewActionsCollector)
+	registerCollector("actions", defaultEnabled, NewActionsCollector)
 }
 
-func NewActionsCollector(githubOrgs string, githubToken string) Collector {
+func NewActionsCollector(logger log.Logger) (Collector, error) {
 	return &ActionsCollector{
-		GithubOrgs:  githubOrgs,
-		GithubToken: githubToken,
 		usedMinutesTotal: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, actionsSubsystem, "used_minutes"),
 			"Total GitHub actions used minutes",
@@ -54,7 +52,8 @@ func NewActionsCollector(githubOrgs string, githubToken string) Collector {
 			[]string{"org"}, nil,
 		),
 		client: &http.Client{},
-	}
+		logger: logger,
+	}, nil
 }
 
 func (ac *ActionsCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -64,11 +63,11 @@ func (ac *ActionsCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (ac *ActionsCollector) Update(ch chan<- prometheus.Metric) error {
-	orgs := parseArg(ac.GithubOrgs)
+	orgs := parseArg(*githubOrgs)
 	for _, org := range orgs {
 		var a actions
 		req, _ := http.NewRequest("GET", "https://api.github.com/orgs/"+org+"/settings/billing/actions", nil)
-		req.Header.Set("Authorization", "token "+ac.GithubToken)
+		req.Header.Set("Authorization", "token "+*githubToken)
 		resp, err := ac.client.Do(req)
 		if err != nil {
 			return err
