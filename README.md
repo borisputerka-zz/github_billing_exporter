@@ -1,5 +1,8 @@
 # GitHub billing exporter
 
+[![GitHub Release](https://img.shields.io/github/release/borisputerka/github_billing_exporter.svg?style=flat)](https://github.com/borisputerka/github_billing_exporter/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/borisputerka/github_billing_exporter)](https://goreportcard.com/report/github.com/borisputerka/github_billing_exporter)
+
 This expoter exposes [Prometheus](https://prometheus.io/) metrics from GitHub billing API [endpoint](https://docs.github.com/en/free-pro-team@latest/rest/reference/billing).
 
 ## Building and running
