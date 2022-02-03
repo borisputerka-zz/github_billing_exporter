@@ -1,7 +1,7 @@
 project_name: github_billing_exporter
 release:
   github:
-    owner: borisputerka
+    owner: raynigon
     name: github_billing_exporter
 builds:
   - id: github_billing_exporter
@@ -17,9 +17,9 @@ builds:
       - GO111MODULE=on
     main: github_billing_exporter.go
     ldflags: -s -w
-      -X github.com/borisputerka/github_billing_exporter/version.version={{.Version}}
-      -X github.com/borisputerka/github_billing_exporter/version.gitSHA={{.Commit}}
-      -X github.com/borisputerka/github_billing_exporter/version.buildTime={{.Date}}
+      -X github.com/raynigon/github_billing_exporter/version.version={{.Version}}
+      -X github.com/raynigon/github_billing_exporter/version.gitSHA={{.Commit}}
+      -X github.com/raynigon/github_billing_exporter/version.buildTime={{.Date}}
       -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
     binary: github_billing_exporter

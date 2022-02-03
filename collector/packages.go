@@ -1,96 +1,96 @@
 package collector
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
+	"context"
 	"sync"
 
-	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/raynigon/github_billing_exporter/v2/pkg/gh_org"
 )
 
 var (
-	packagesSubsystem = "packages"
+	orgPackagesSubsystem = "packages_org"
 )
 
-type packages struct {
-	TotalGigabytesBandwidthUsed     int `json:"total_gigabytes_bandwidth_used"`
-	TotalPaidGigabytesBandwidthUsed int `json:"total_paid_gigabytes_bandwidth_used"`
-	IncludedGigabytesBandwidth      int `json:"included_gigabytes_bandwidth"`
-}
-
-type packagesCollector struct {
-	totalGigabytesBandwidthUsed     *prometheus.Desc
-	totalPaidGigabytesBandwidthUsed *prometheus.Desc
-	includedGigabytesBandwidth      *prometheus.Desc
-
-	mutex  sync.Mutex
-	client *http.Client
-	logger log.Logger
+type OrgPackagesCollector struct {
+	config            CollectorConfig
+	metrics           map[string]*gh_org.GitHubOrgMetrics
+	usedBandwithTotal *prometheus.Desc
+	usedBandwithPaid  *prometheus.Desc
+	inclusiveBandwith *prometheus.Desc
 }
 
 func init() {
-	registerCollector("packages", defaultEnabled, NewPackagesCollector)
+	registerCollector(orgPackagesSubsystem, NewOrgPackagesCollectorCollector)
 }
 
-// NewPackagesCollector returns a new Collector exposing packages billing stats.
-func NewPackagesCollector(logger log.Logger) (Collector, error) {
-	return &packagesCollector{
-		totalGigabytesBandwidthUsed: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, packagesSubsystem, "bandwidth_used_gigabytes"),
-			"GitHub packages used in gigabytes",
+// NewOrgActionsCollector returns a new Collector exposing actions billing stats.
+func NewOrgPackagesCollectorCollector(config CollectorConfig, ctx context.Context) (Collector, error) {
+	collector := &OrgPackagesCollector{
+		config:  config,
+		metrics: make(map[string]*gh_org.GitHubOrgMetrics),
+		usedBandwithTotal: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, orgPackagesSubsystem, "bandwith_total_count"),
+			"GitHub packages total used bandwith in gigabytes",
 			[]string{"org"}, nil,
 		),
-		totalPaidGigabytesBandwidthUsed: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, packagesSubsystem, "bandwidth_used_paid_gigabytes"),
-			"GitHub packages paid used in gigabytes",
+		usedBandwithPaid: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, orgPackagesSubsystem, "bandwith_paid_count"),
+			"GitHub packages paid used bandwith in gigabytes",
 			[]string{"org"}, nil,
 		),
-		includedGigabytesBandwidth: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, packagesSubsystem, "bandwidth_included_gigabytes"),
-			"GitHub packages paid used in gigabytes",
+		inclusiveBandwith: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, orgPackagesSubsystem, "bandwith_inclusive"),
+			"GitHub packages inclusive budget bandwith in gigabytes",
 			[]string{"org"}, nil,
 		),
-		client: &http.Client{},
-		logger: logger,
-	}, nil
+	}
+	err := collector.Reload(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return collector, nil
 }
 
 // Describe implements Collector.
-func (pc *packagesCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- pc.totalGigabytesBandwidthUsed
-	ch <- pc.totalPaidGigabytesBandwidthUsed
-	ch <- pc.includedGigabytesBandwidth
+func (oac *OrgPackagesCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- oac.usedBandwithTotal
+	ch <- oac.usedBandwithPaid
+	ch <- oac.inclusiveBandwith
 }
 
-// Update implements Collector and exposes packages billing stats
-// from api.github.com/orgs/<org>/settings/billing/packages.
-func (pc *packagesCollector) Update(ch chan<- prometheus.Metric) error {
-	orgs := parseArg(*githubOrgs)
-	for _, org := range orgs {
-		var p packages
-		req, _ := http.NewRequest("GET", "https://api.github.com/orgs/"+org+"/settings/billing/packages", nil)
-		req.Header.Set("Authorization", "token "+*githubToken)
-		resp, err := pc.client.Do(req)
-		if err != nil {
-			return err
-		}
-
-		if resp.StatusCode != 200 {
-			return fmt.Errorf("status %s, organization: %s collector: %s", resp.Status, org, packagesSubsystem)
-		}
-
-		err = json.NewDecoder(resp.Body).Decode(&p)
-		if err != nil {
-			return err
-		}
-		resp.Body.Close()
-
-		ch <- prometheus.MustNewConstMetric(pc.totalGigabytesBandwidthUsed, prometheus.GaugeValue, float64(p.TotalGigabytesBandwidthUsed), org)
-		ch <- prometheus.MustNewConstMetric(pc.totalPaidGigabytesBandwidthUsed, prometheus.GaugeValue, float64(p.TotalPaidGigabytesBandwidthUsed), org)
-		ch <- prometheus.MustNewConstMetric(pc.includedGigabytesBandwidth, prometheus.GaugeValue, float64(p.IncludedGigabytesBandwidth), org)
+func (oac *OrgPackagesCollector) Reload(ctx context.Context) error {
+	metrics := make(map[string]*gh_org.GitHubOrgMetrics)
+	for _, org := range oac.config.Orgs {
+		metrics[org] = gh_org.NewGitHubOrgMetrics(oac.config.Github, org)
 	}
+	oac.metrics = metrics
+	return nil
+}
 
+func (oac *OrgPackagesCollector) Update(ctx context.Context, ch chan<- prometheus.Metric) error {
+	wg := sync.WaitGroup{}
+	wg.Add(len(oac.metrics))
+	errors := make(chan error, len(oac.metrics))
+	for org, githubOrg := range oac.metrics {
+		go func(org string, githubOrg *gh_org.GitHubOrgMetrics) {
+			metrics, err := githubOrg.CollectPackages(ctx)
+			if err != nil {
+				errors <- err
+				wg.Done()
+				return
+			}
+
+			ch <- prometheus.MustNewConstMetric(oac.usedBandwithTotal, prometheus.CounterValue, float64(metrics.TotalGigabytesBandwidthUsed), org)
+			ch <- prometheus.MustNewConstMetric(oac.usedBandwithPaid, prometheus.CounterValue, float64(metrics.TotalPaidGigabytesBandwidthUsed), org)
+			ch <- prometheus.MustNewConstMetric(oac.inclusiveBandwith, prometheus.GaugeValue, float64(metrics.IncludedGigabytesBandwidth), org)
+			wg.Done()
+		}(org, githubOrg)
+	}
+	wg.Wait()
+	close(errors)
+	for error := range errors {
+		return error
+	}
 	return nil
 }

@@ -1,96 +1,95 @@
 package collector
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/go-kit/kit/log"
-	"github.com/prometheus/client_golang/prometheus"
-	"net/http"
+	"context"
 	"sync"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/raynigon/github_billing_exporter/v2/pkg/gh_org"
 )
 
 var (
-	storageSubsystem = "storage"
+	orgStorageSubsystem = "storage_org"
 )
 
-type storage struct {
-	DaysLeftInBillingCycle       int `json:"days_left_in_billing_cycle"`
-	EstimatedPaidStorageForMonth int `json:"estimated_paid_storage_for_month"`
-	EstimatedStorageForMonth     int `json:"estimated_storage_for_month"`
-}
-
-type storageCollector struct {
-	daysLeftInBillingCycle       *prometheus.Desc
-	estimatedPaidStorageForMonth *prometheus.Desc
-	estimatedStorageForMonth     *prometheus.Desc
-
-	mutex  sync.Mutex
-	client *http.Client
-	logger log.Logger
+type OrgStorageCollector struct {
+	config           CollectorConfig
+	metrics          map[string]*gh_org.GitHubOrgMetrics
+	usedStorageTotal *prometheus.Desc
+	usedStoragePaid  *prometheus.Desc
+	billingCycleDays *prometheus.Desc
 }
 
 func init() {
-	registerCollector("storage", defaultEnabled, NewStorageCollector)
+	registerCollector(orgStorageSubsystem, NewOrgStorageCollector)
 }
 
-// NewStorageCollector returns a new Collector exposing storage billing stats.
-func NewStorageCollector(logger log.Logger) (Collector, error) {
-	return &storageCollector{
-		daysLeftInBillingCycle: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "cycle_remaining_days"),
-			"GitHub packages paid used in gigabytes",
+// NewOrgActionsCollector returns a new Collector exposing actions billing stats.
+func NewOrgStorageCollector(config CollectorConfig, ctx context.Context) (Collector, error) {
+	collector := &OrgStorageCollector{
+		config:  config,
+		metrics: make(map[string]*gh_org.GitHubOrgMetrics),
+		usedStorageTotal: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, orgStorageSubsystem, "total_count"),
+			"GitHub storage used total in gigabytes",
 			[]string{"org"}, nil,
 		),
-		estimatedPaidStorageForMonth: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, storageSubsystem, "estimated_month_pay"),
-			"GitHub packages month estimated pay",
+		usedStoragePaid: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, orgStorageSubsystem, "paid_count"),
+			"GitHub packages used paid in gigabytes",
 			[]string{"org"}, nil,
 		),
-		estimatedStorageForMonth: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, storageSubsystem, "estimated_month_use"),
-			"GitHub packages month estimated storage",
+		billingCycleDays: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, orgStorageSubsystem, "billing_cycle_days"),
+			"Days left in the current billing cycle",
 			[]string{"org"}, nil,
 		),
-		client: &http.Client{},
-		logger: logger,
-	}, nil
+	}
+	err := collector.Reload(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return collector, nil
 }
 
 // Describe implements Collector.
-func (sc *storageCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- sc.daysLeftInBillingCycle
-	ch <- sc.estimatedPaidStorageForMonth
-	ch <- sc.estimatedStorageForMonth
+func (oac *OrgStorageCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- oac.usedStorageTotal
+	ch <- oac.usedStoragePaid
 }
 
-// Update implements Collector and exposes storage billing stats
-// from api.github.com/orgs/<org>/settings/billing/shared-storage.
-func (sc *storageCollector) Update(ch chan<- prometheus.Metric) error {
-	orgs := parseArg(*githubOrgs)
-	for _, org := range orgs {
-		var s storage
-		req, _ := http.NewRequest("GET", "https://api.github.com/orgs/"+org+"/settings/billing/shared-storage", nil)
-		req.Header.Set("Authorization", "token "+*githubToken)
-		resp, err := sc.client.Do(req)
-		if err != nil {
-			return err
-		}
-
-		if resp.StatusCode != 200 {
-			return fmt.Errorf("status %s, organization: %s collector: %s", resp.Status, org, storageSubsystem)
-		}
-
-		err = json.NewDecoder(resp.Body).Decode(&s)
-		if err != nil {
-			return err
-		}
-
-		resp.Body.Close()
-
-		ch <- prometheus.MustNewConstMetric(sc.daysLeftInBillingCycle, prometheus.GaugeValue, float64(s.DaysLeftInBillingCycle), org)
-		ch <- prometheus.MustNewConstMetric(sc.estimatedPaidStorageForMonth, prometheus.GaugeValue, float64(s.EstimatedPaidStorageForMonth), org)
-		ch <- prometheus.MustNewConstMetric(sc.estimatedStorageForMonth, prometheus.GaugeValue, float64(s.EstimatedStorageForMonth), org)
+func (oac *OrgStorageCollector) Reload(ctx context.Context) error {
+	metrics := make(map[string]*gh_org.GitHubOrgMetrics)
+	for _, org := range oac.config.Orgs {
+		metrics[org] = gh_org.NewGitHubOrgMetrics(oac.config.Github, org)
 	}
+	oac.metrics = metrics
+	return nil
+}
 
+func (oac *OrgStorageCollector) Update(ctx context.Context, ch chan<- prometheus.Metric) error {
+	wg := sync.WaitGroup{}
+	wg.Add(len(oac.metrics))
+	errors := make(chan error, len(oac.metrics))
+	for org, githubOrg := range oac.metrics {
+		go func(org string, githubOrg *gh_org.GitHubOrgMetrics) {
+			metrics, err := githubOrg.CollectStorage(ctx)
+			if err != nil {
+				errors <- err
+				wg.Done()
+				return
+			}
+
+			ch <- prometheus.MustNewConstMetric(oac.usedStorageTotal, prometheus.CounterValue, float64(metrics.EstimatedStorageForMonth), org)
+			ch <- prometheus.MustNewConstMetric(oac.usedStoragePaid, prometheus.CounterValue, float64(metrics.EstimatedPaidStorageForMonth), org)
+			ch <- prometheus.MustNewConstMetric(oac.billingCycleDays, prometheus.GaugeValue, float64(metrics.DaysLeftInBillingCycle), org)
+			wg.Done()
+		}(org, githubOrg)
+	}
+	wg.Wait()
+	close(errors)
+	for error := range errors {
+		return error
+	}
 	return nil
 }
