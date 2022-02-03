@@ -24,6 +24,14 @@ builds:
     flags: -tags netgo -installsuffix netgo
     binary: github_billing_exporter
     hooks: {}
+dockers:
+  - dockerfile: "./Dockerfile"
+    ids:
+      - github_billing_exporter
+    image_templates:
+    - "raynigon/github_billing_exporter:latest"
+    - "raynigon/github_billing_exporter:{{ .Tag }}"
+    - "raynigon/github_billing_exporter:v{{ .Major }}"
 archives:
   - id: github_billing_exporter
     builds:
