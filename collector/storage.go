@@ -36,7 +36,7 @@ func NewOrgStorageCollector(config CollectorConfig, ctx context.Context) (Collec
 		),
 		usedStoragePaid: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, orgStorageSubsystem, "paid_count"),
-			"GitHub packages used paid in gigabytes",
+			"GitHub storage used paid in gigabytes",
 			[]string{"org"}, nil,
 		),
 		billingCycleDays: prometheus.NewDesc(
