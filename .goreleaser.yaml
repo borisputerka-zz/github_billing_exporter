@@ -32,6 +32,9 @@ dockers:
     - "raynigon/github_billing_exporter:latest"
     - "raynigon/github_billing_exporter:{{ .Tag }}"
     - "raynigon/github_billing_exporter:v{{ .Major }}"
+    - "raynigon/github-billing-exporter:latest"
+    - "raynigon/github-billing-exporter:{{ .Tag }}"
+    - "raynigon/github-billing-exporter:v{{ .Major }}"
 archives:
   - id: github_billing_exporter
     builds:
