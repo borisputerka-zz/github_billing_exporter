@@ -18,14 +18,14 @@ Token needs to have access to read billing data, repositories and workflows.
 
 Running using an environment variable:
 
-    export GITHUB_ORGS="ORG1,ORG2,..."
-    export GITHUB_TOKEN="example_token"
+    export GBE_GITHUB_ORGS="ORG1 ORG2 ..."
+    export GBE_GITHUB_TOKEN="example_token"
     ./github_billing_exporter
 
 Running using args:
 
     ./github_billing_exporter \
-    --github-orgs="ORG1,ORG2,..." \
+    --github-orgs="ORG1 ORG2 ..." \
     --github-token="example_token"
 
 ## Collectors
