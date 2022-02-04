@@ -1,5 +1,8 @@
 # GitHub billing exporter
 
+[![GitHub Release](https://img.shields.io/github/release/raynigon/github_billing_exporter.svg?style=flat)](https://github.com/raynigon/github_billing_exporter/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/raynigon/github_billing_exporter)](https://goreportcard.com/report/github.com/raynigon/github_billing_exporter)
+
 Forked From: https://github.com/borisputerka/github_billing_exporter because its not maintained there anymore.
 
 This exporter exposes [Prometheus](https://prometheus.io/) metrics from GitHub billing API [endpoint](https://docs.github.com/en/free-pro-team@latest/rest/reference/billing) and the GitHub timing API [endpoint](https://docs.github.com/en/rest/reference/actions#get-workflow-usage).
