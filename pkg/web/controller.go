@@ -9,7 +9,7 @@ import (
 
 func registerController(config config.GitHubBillingExporterConfig) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { indexController(w, r, config) })
-	http.HandleFunc("/healthz", healthController)
+	http.HandleFunc("/health", healthController)
 	http.Handle(config.GetMetricsPath(), promhttp.Handler())
 }
 
