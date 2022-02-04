@@ -5,13 +5,14 @@ import (
 )
 
 type GitHubBillingExporterConfig struct {
-	listenAddress *string
-	metricsPath   *string
-	githubToken   *string
-	githubOrgs    *string
-	logLevel      *string
-	logFormat     *string
-	logOutput     *string
+	listenAddress      *string
+	metricsPath        *string
+	githubToken        *string
+	githubOrgs         *string
+	disabledCollectors *string
+	logLevel           *string
+	logFormat          *string
+	logOutput          *string
 }
 
 func NewGitHubBillingExporterConfig() GitHubBillingExporterConfig {
@@ -31,6 +32,10 @@ func NewGitHubBillingExporterConfig() GitHubBillingExporterConfig {
 		githubOrgs: kingpin.Flag("github.orgs", "Space seperated list of GitHub Organizations").
 			Default("").
 			Envar("GBE_GITHUB_ORGS").
+			String(),
+		disabledCollectors: kingpin.Flag("disabled.collectors", "Space seperated list of Disabled Collectors").
+			Default("").
+			Envar("GBE_DISABLED_COLLECTORS").
 			String(),
 		logLevel: kingpin.Flag("log.level", "Sets the loglevel. Valid levels are debug, info, warn, error").
 			Default("info").

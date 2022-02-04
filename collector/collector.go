@@ -20,9 +20,10 @@ var (
 )
 
 type CollectorConfig struct {
-	Logger log.Logger
-	Github *github.Client
-	Orgs   []string
+	Logger             log.Logger
+	Github             *github.Client
+	Orgs               []string
+	DisabledCollectors []string
 }
 
 // Collector is the interface a collector has to implement.
@@ -44,6 +45,15 @@ type collectorEntry struct {
 	value Collector
 }
 
+func (cfg *CollectorConfig) isDisabled(name string) bool {
+	for _, a := range cfg.DisabledCollectors {
+		if a == name {
+			return true
+		}
+	}
+	return false
+}
+
 func registerCollector(name string, factory func(CollectorConfig, context.Context) (Collector, error)) {
 	factories[name] = factory
 }
@@ -55,6 +65,10 @@ func NewGitHubBillingCollector(config CollectorConfig) (prometheus.Collector, er
 	collectors := make(chan collectorEntry, len(factories))
 	errors := make(chan error, len(factories))
 	for name, factory := range factories {
+		if config.isDisabled(name) {
+			wg.Done()
+			continue
+		}
 		go func(name string, factory func(CollectorConfig, context.Context) (Collector, error)) {
 			collector, err := factory(config, ctx)
 			if err != nil {
