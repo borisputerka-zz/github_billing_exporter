@@ -2,7 +2,6 @@
 
 [![GitHub Release](https://img.shields.io/github/release/raynigon/github_billing_exporter.svg?style=flat)](https://github.com/raynigon/github_billing_exporter/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/raynigon/github_billing_exporter/v2)](https://goreportcard.com/report/github.com/raynigon/github_billing_exporter/v2)
-[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/raynigon/github_billing_exporter?sort=semver)](https://hub.docker.com/r/raynigon/github-billing-exporter)
 
 Forked From: https://github.com/borisputerka/github_billing_exporter because its not maintained there anymore.
 
@@ -17,15 +16,15 @@ https://github.com/raynigon/github_billing_exporter/releases
 ### Docker
 
 ```bash
-docker pull raynigon/github-billing-exporter:latest
-docker run --rm -p 9776:9776 raynigon/github-billing-exporter:latest
+docker pull ghcr.io/raynigon/github-billing-exporter:latest
+docker run --rm -p 9776:9776 ghcr.io/raynigon/github-billing-exporter:latest
 ```
 
 Example `docker-compose.yml`:
 
 ```yaml
 github_billing_exporter:
-    image: raynigon/github-billing-exporter:latest
+    image: ghcr.io/raynigon/github-billing-exporter:latest
     command:
      - '--githun.token=<SECRET>'
     restart: always
@@ -38,10 +37,6 @@ github_billing_exporter:
 You can find an deployment definition at: https://github.com/raynigon/github_billing_exporter/tree/main/examples/kubernetes/deployment.yaml .
 
 ## Building and running
-
-## Token privileges
-
-Token needs to have access to read billing data, repositories and workflows.
 
 ### Build
 
@@ -86,3 +81,7 @@ Version    | Env		               | Arg		             | Description			           
 \>=`0.3.0` | `GBE_LOG_FORMAT`          | `--log.format`	         | -                                               | `"logfmt"`
 \>=`0.3.0` | `GBE_LOG_OUTPUT`          | `--log.output`	         | -                                               | `"stdout"`
 \>=`0.4.0` | `GBE_DISABLED_COLLECTORS` | `--disabled-collectors` | Collectors to disable			               | `""`
+
+### Token privileges
+
+The GitHub Private Access Token needs to have access to read billing data, repositories and workflows.
