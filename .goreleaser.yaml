@@ -29,12 +29,12 @@ dockers:
     ids:
       - github_billing_exporter
     image_templates:
-    - "raynigon/github_billing_exporter:latest"
-    - "raynigon/github_billing_exporter:{{ .Tag }}"
-    - "raynigon/github_billing_exporter:v{{ .Major }}"
-    - "raynigon/github-billing-exporter:latest"
-    - "raynigon/github-billing-exporter:{{ .Tag }}"
-    - "raynigon/github-billing-exporter:v{{ .Major }}"
+    - "ghcr.io/raynigon/github_billing_exporter:latest"
+    - "ghcr.io/raynigon/github_billing_exporter:{{ .Tag }}"
+    - "ghcr.io/raynigon/github_billing_exporter:v{{ .Major }}"
+    - "ghcr.io/raynigon/github-billing-exporter:latest"
+    - "ghcr.io/raynigon/github-billing-exporter:{{ .Tag }}"
+    - "ghcr.io/raynigon/github-billing-exporter:v{{ .Major }}"
 archives:
   - id: github_billing_exporter
     builds:
